@@ -30,8 +30,6 @@ class NodeGene(BaseGene):
         self.__x = relx
         self.__y = rely
 
-        self.normalized = False
-
         self.__output = 0
 
     @property
@@ -52,6 +50,9 @@ class NodeGene(BaseGene):
     def setX(self, value):
         self.__x = value
 
+    def addToOutput(self, value):
+        self.__output += value
+
     def setOutput(self, value):
         self.__output = value
 
@@ -70,19 +71,6 @@ class ConnectionGene(BaseGene):
         self.__active = True
 
         self.__weight = weight
-
-    def calculate(self, activation):
-
-        if not self.active: return
-
-        if not self.input.normalized:
-            self.input.setOutput(activation(self.input.output))
-            self.input.normalized = True
-
-        self.output.setOutput(self.output.output+ (self.input.output*self.weight))
-
-        if self.output.normalized:
-            self.output.normalized = False
 
     def setActivity(self, value):
         self.__active = value

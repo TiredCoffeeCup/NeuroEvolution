@@ -1,11 +1,11 @@
-from maths_and_data.IndexedSet import IndexedSet
-from random import sample, choices, choice
 from math import ceil
+from random import choices, choice
+
 from genetics.Genome import Genome
+from maths_and_data.IndexedSet import IndexedSet
 
 
 class Species:
-
     __MAX_DISTANCE = 0.15
 
     def __init__(self, representative):
@@ -13,8 +13,10 @@ class Species:
         self.representative = representative
         self.members = IndexedSet()
 
+        self.members.addItem(self.representative)
+
         self.fitnessHistory = []
-        self.maxFitness = 0
+        self.maxFitnessHist = 10
         self.fitnessSum = 0
 
     def addMember(self, new, force: bool = False):
@@ -28,45 +30,45 @@ class Species:
 
         chosenOp = choices(('as', 'se'), breedProbs)
 
-        if chosenOp == 'as':
-            child = choice(self.members).copy()
+        self.members.sort(key=lambda g: g.fitness, reverse=True)
+
+        if chosenOp == 'as' or len(self.members) < 2:
+            child = self.members[0].copy()
             child.mutate()
+            self.addMember(child, force=True)
 
         else:
-            child = Genome.crossover(*sample(self.members, 2))
+            parents = self.members[:2]
+            child = Genome.crossover(parents[0], choice([parents[1], parents[1].brain.fittest]))
+            child.brain.classifyGenome(child)
 
-        self.addMember(child, force=True)
         return child
 
     def calculateFitness(self):
 
-        self.fitnessSum = sum([g.fitness for g in self.members])/len(self.members)
+        if not self.members: return
+
+        self.fitnessSum = sum([g.fitness for g in self.members])
 
         self.fitnessHistory.append(self.fitnessSum)
-        if len(self.fitnessHistory) > self.maxFitness:
+
+        if len(self.fitnessHistory) > self.maxFitnessHist:
             self.fitnessHistory.pop(0)
 
     def cullGenomes(self, fraction):
 
         self.members.sort(key=lambda g: g.fitness, reverse=True)
 
-        self.members = self.members[: int(ceil(fraction * len(self.members)))]
+        self.members = IndexedSet(self.members[: int(ceil(fraction * len(self.members)))])
 
         self.representative = self.members[0]
 
     def canProgress(self):
 
         num = len(self.fitnessHistory)
-        return sum(self.fitnessHistory)/num > self.fitnessHistory[0] or num < self.maxFitness
+        return sum(self.fitnessHistory) / num >= self.fitnessHistory[0]
 
+    def kill(self):
 
-
-
-
-
-
-
-        
-
-
-
+        self.members.clear()
+        return True

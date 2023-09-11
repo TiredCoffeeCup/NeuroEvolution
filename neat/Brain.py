@@ -1,9 +1,12 @@
+from pickle import load, dump, HIGHEST_PROTOCOL
+from random import random
+
 from genetics.Genes import NodeGene, ConnectionGene
 from genetics.Genome import Genome
-from neat.Species import Species
-from maths_and_data.IndexedSet import IndexedSet
 from maths_and_data.Activations import *
-from random import random
+from maths_and_data.IndexedSet import IndexedSet
+from neat.Species import Species
+
 
 class Brain:
 
@@ -17,29 +20,47 @@ class Brain:
         self.all_connectors = dict()
 
         self.clients = clients
-
-        self.globalFitness = 0
-
         self.weightSet = WeightSet()
 
+        self.generation = 0
+
+        self.fittest = None
+
         self.reset()
+
+        for i in range(self.clients):
+            newGenome = self.createGenome()
+            for i in range(10):
+                newGenome.mutate()
+            self.classifyGenome(newGenome)
 
     def reset(self):
 
         self.all_nodes.clear()
         self.all_connectors.clear()
 
+        for s in self.species:
+            s.members.clear()
+
+        self.species.clear()
+
         for i in range(self.inputs):
             n = self.getNode()
 
             n.setX(0.1)
-            n.setY((i / (self.inputs - 1)) * 0.8 + 0.1)
+            if self.inputs > 1:
+                n.setY((i / (self.inputs - 1)) * 0.8 + 0.1)
+            else:
+                n.setY(0.5)
 
         for o in range(self.outputs):
             n = self.getNode()
 
             n.setX(0.9)
-            n.setY((o / (self.outputs - 1)) * 0.8 + 0.1)
+            if self.outputs > 1:
+                n.setY((o / (self.outputs - 1)) * 0.8 + 0.1)
+            else:
+                n.setY(0.5)
 
     def createGenome(self) -> Genome:
 
@@ -50,7 +71,12 @@ class Brain:
         newGenome.setOutputSize(self.outputs)
 
         for i in range(self.inputs + self.outputs):
-            newGenome.nodes.append(self.getNode(i+1))
+            node = self.getNode(i + 1)
+            if i < self.inputs:
+                newGenome.inputNodes.append(node)
+            else:
+                newGenome.outputNodes.append(node)
+            newGenome.nodes.append(node)
 
         return newGenome
 
@@ -82,7 +108,7 @@ class Brain:
             newNode = self.getNode()
 
             newNode.setX((conn.input.x + conn.output.x) / 2)
-            newNode.setY((conn.input.y + conn.output.y) / 2 + random()*0.3 - 0.15)
+            newNode.setY((conn.input.y + conn.output.y) / 2 + random() * 0.3 - 0.15)
 
             return newNode.copy()
 
@@ -93,7 +119,7 @@ class Brain:
         else:
             return self.all_nodes[id - 1].copy()
 
-    def classifyGenomes(self, g):
+    def classifyGenome(self, g):
 
         if self.species:
             for s in self.species:
@@ -101,37 +127,100 @@ class Brain:
 
         self.species.addItem(Species(g))
 
-    def evolve(self):
+    def getBest(self):
+        return max(sum([s.members for s in self.species], start=[]), key=lambda m: m.fitness)
+
+    def evolve(self, checkProgress):
+
+        self.generation += 1
+
+        globalFitness = 0
 
         for s in self.species:
             s.calculateFitness()
-            self.globalFitness += s.fitnessSum
+            globalFitness += s.fitnessSum
 
-        if self.globalFitness > 0:
+        self.fittest = max(self.getBest(), self.fittest,
+                           key=lambda g: g.fitness) if self.fittest is not None else self.getBest()
 
-            self.species = [s for s in self.species if s.canProgress()]
+        if globalFitness > 0:
 
+            newGlobalFitness = 0
+            survivingSpecies = IndexedSet()
             totalPop = 0
 
             for s in self.species:
-                s.cullGenomes(0.4)
-                totalPop += len(s.members)
+                if s.canProgress() or not checkProgress:
+                    newGlobalFitness += s.fitnessSum
+                    survivingSpecies.addItem(s)
 
-            for s in self.species:
-                ratio = s.fitnessSum/self.globalFitness
-                diff = self.clients - totalPop
+                    s.cullGenomes(0.25)
+                    totalPop += len(s.members)
+                else:
+                    s.kill()
 
-                for i in range(int(round(ratio*diff))):
-                    s.breed(self.weightSet.getBreedProbs())
+            self.species = survivingSpecies
 
-                for g in s.members:
-                    g.mutate()
+            if self.species:
+                for s in self.species:
+                    ratio = s.fitnessSum / newGlobalFitness
+                    diff = self.clients - totalPop
+
+                    no = int(round(ratio * diff))
+
+                    for i in range(no // 3):
+                        s.breed(self.weightSet.getBreedProbs())
+
+                    for i in range(no - no // 3):
+                        new = self.fittest.copy()
+                        for j in range(2):
+                            new.mutate()
+
+                        self.classifyGenome(new)
+
+                    for g in s.members:
+                        g.mutate()
+
+            else:
+                for i in range(self.clients):
+                    g = self.fittest.copy()
+
+                    self.classifyGenome(g)
 
         else:
 
             for s in self.species:
                 for g in s.members:
                     g.mutate()
+
+    def save(self, filename):
+        with open(f'{filename}.neat', mode='wb') as file:
+            dump(self, file, HIGHEST_PROTOCOL)
+
+    def saveFittest(self, filename):
+        with open(f'{filename}_fittest.gen', mode='wb') as file:
+            dump(self.fittest, file, HIGHEST_PROTOCOL)
+
+    def loadFittest(self, filename):
+        with open(f'{filename}_fittest.gen', mode='rb') as file:
+            genome = load(file)
+
+        for s in self.species:
+            s.members.clear()
+        self.species.clear()
+
+        for i in range(self.clients):
+            copy = genome.copy()
+            for j in range(5):
+                copy.mutate()
+
+            self.classifyGenome(copy)
+
+    @staticmethod
+    def load(filename):
+        with open(f'{filename}.neat', mode='rb') as file:
+            return load(file)
+
 
 class WeightSet:
 
@@ -143,23 +232,19 @@ class WeightSet:
         self.__WEIGHT_STRENGTHS = (0.5, 0.5)
 
         # 0: Node, 1: Connector, 2: Toggle, 3: Shift, 4: Random
-        self.__MUTATION_PROBS = (0.11, 0.16, 0.11, 0.19, 0.2)
+        self.__MUTATION_PROBS = (0.06, 0.24, 0.11, 0.19, 0.2)
 
         # 1: Sexual, 1: Asexual
-        self.__BREED_PROBABILITIES = (0.83, 0.17)
+        self.__BREED_PROBABILITIES = (0.53, 0.34)
 
     def getDistanceConstants(self, index: int = -1):
-
         return self.__DISTANCE_CONST[index] if index >= 0 else self.__DISTANCE_CONST
 
     def getWeightStrengths(self, index: int = -1):
-
         return self.__WEIGHT_STRENGTHS[index] if index >= 0 else self.__WEIGHT_STRENGTHS
 
     def getMutationProbs(self, index: int = -1):
-
         return self.__MUTATION_PROBS[index] if index >= 0 else self.__MUTATION_PROBS
 
     def getBreedProbs(self, index: int = -1):
-
         return self.__BREED_PROBABILITIES[index] if index >= 0 else self.__BREED_PROBABILITIES

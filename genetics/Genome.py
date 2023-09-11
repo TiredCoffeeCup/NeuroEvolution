@@ -11,6 +11,9 @@ class Genome:
         self.nodes: IndexedSet[NodeGene] = IndexedSet()
         self.connections: IndexedSet[ConnectionGene] = IndexedSet()
 
+        self.inputNodes = []
+        self.outputNodes = []
+
         self.__fitness = 0
 
         self.defaultActivation = defaultAct
@@ -102,21 +105,29 @@ class Genome:
 
     def calculate(self, inputs: list[int]):
         if len(inputs) != self.inputSize: raise ValueError('Input size does not match available slots')
-        self.connections.sort(key = lambda c: c.input.x)
 
-        for i, n in enumerate(sorted(self.nodes, key = lambda n: n.x + n.iNum)):
+        for i, n in enumerate(self.inputNodes):
+            n.setOutput(inputs[i])
 
-            if n.iNum <= self.inputSize:
-                n.setOutput(inputs[i-1])
-                n.normalized = False
-            else:
-                n.setOutput(0)
+        nodeLis = {j : [] for j in range(len(self.nodes)) if self.nodes[j] not in self.inputNodes}
 
+        for i in range(len(self.connections)):
+            nodeLis[self.nodes.index(self.connections[i].output)].append(i)
 
-        for c in self.connections:
-            c.calculate(self.defaultActivation)
+        nodeLis = sorted(list(nodeLis.items()), key=lambda t: self.nodes[t[0]].x)
 
-        return [self.defaultActivation(N.output) for N in sorted(self.nodes, key = lambda n: n.x + n.iNum, reverse=True)[:self.outputSize]]
+        for n, conns in nodeLis:
+            node =  self.nodes[n]
+            node.setOutput(0)
+
+            for c in conns:
+                conn = self.connections[c]
+
+                node.addToOutput(conn.input.output * conn.weight)
+
+            node.setOutput(self.defaultActivation(node.output))
+
+        return [n.output for n in self.outputNodes]
 
     def distance(self, other):
 
@@ -153,7 +164,7 @@ class Genome:
         lesser_set = set(lDict)
 
         for i in fitter_set & lesser_set:
-            selectedConn = choice((first, second)).connections[fDict[i]]
+            selectedConn = fitSorted[0].connections[fDict[i]]
             inp = first.brain.getNode(selectedConn.input.iNum)
             out = first.brain.getNode(selectedConn.output.iNum)
 
@@ -202,12 +213,19 @@ class Genome:
             clone.nodes.addItem(inp)
             clone.nodes.addItem(out)
 
-            newConn = clone.nodes.addItem(self.brain.getConnector(inp, out))
+            newConn = clone.connections.addItem(self.brain.getConnector(inp, out))
 
             newConn.setWeight(conn.weight)
             newConn.setActivity(conn.active)
 
         return clone
+
+    def kill(self):
+
+        self.nodes.clear()
+        self.connections.clear()
+
+        return True
 
     @property
     def inputSize(self):

@@ -12,6 +12,9 @@ class Visualizer:
 
         self.update()
 
+    def setGenome(self, value):
+        self.__genome = value
+
     @property
     def genome(self):
         return self.__genome
