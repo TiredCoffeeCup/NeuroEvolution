@@ -1,11 +1,11 @@
 from pickle import load, dump, HIGHEST_PROTOCOL
 from random import random
 
-from genetics.Genes import NodeGene, ConnectionGene
-from genetics.Genome import Genome
-from maths_and_data.Activations import *
-from maths_and_data.IndexedSet import IndexedSet
-from neat.Species import Species
+from Neural.genetics.Genes import NodeGene, ConnectionGene
+from Neural.genetics.Genome import Genome
+from Neural.maths_and_data.Activations import *
+from Neural.maths_and_data.IndexedSet import IndexedSet
+from Neural.neat.Species import Species
 
 
 class Brain:
@@ -130,7 +130,7 @@ class Brain:
     def getBest(self):
         return max(sum([s.members for s in self.species], start=[]), key=lambda m: m.fitness)
 
-    def evolve(self, checkProgress):
+    def evolve(self):
 
         self.generation += 1
 
@@ -150,7 +150,7 @@ class Brain:
             totalPop = 0
 
             for s in self.species:
-                if s.canProgress() or not checkProgress:
+                if s.canProgress():
                     newGlobalFitness += s.fitnessSum
                     survivingSpecies.addItem(s)
 

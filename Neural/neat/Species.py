@@ -1,8 +1,8 @@
 from math import ceil
 from random import choices, choice
 
-from genetics.Genome import Genome
-from maths_and_data.IndexedSet import IndexedSet
+from Neural.genetics.Genome import Genome
+from Neural.maths_and_data.IndexedSet import IndexedSet
 
 
 class Species:
@@ -66,7 +66,13 @@ class Species:
     def canProgress(self):
 
         num = len(self.fitnessHistory)
-        return sum(self.fitnessHistory) / num >= self.fitnessHistory[0]
+        return len(
+            [i for i in range(
+                len(self.fitnessHistory)
+            ) if i > 0  and (
+                    self.fitnessHistory[i] > (sum(self.fitnessHistory[:i])/i)
+            )]
+        ) > num//2
 
     def kill(self):
 

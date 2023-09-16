@@ -1,7 +1,7 @@
 from random import choices, sample, choice, random
 
-from genetics.Genes import ConnectionGene, NodeGene
-from maths_and_data.IndexedSet import IndexedSet
+from Neural.genetics.Genes import ConnectionGene, NodeGene
+from Neural.maths_and_data.IndexedSet import IndexedSet
 
 
 class Genome:

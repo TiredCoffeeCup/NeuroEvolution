@@ -1,5 +1,5 @@
 import pygame as pg
-from genetics.Genome import Genome
+from Neural.genetics.Genome import Genome
 
 class Visualizer:
 
