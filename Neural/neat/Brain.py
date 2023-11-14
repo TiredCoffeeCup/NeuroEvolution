@@ -150,7 +150,7 @@ class Brain:
             totalPop = 0
 
             for s in self.species:
-                if s.canProgress():
+                if s.canProgress() or self.fittest in s.members:
                     newGlobalFitness += s.fitnessSum
                     survivingSpecies.addItem(s)
 

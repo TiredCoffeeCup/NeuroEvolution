@@ -11,13 +11,17 @@ class Simulator:
 
         self.clock = pg.time.Clock()
 
-        self.BRAIN = Brain(5, 3, CLIENTS)
+        self.BRAIN = Brain(1, 3, CLIENTS)
+        self.VISUALIZER = Visualizer(self.BRAIN.getBest(), 200, 100)
         self.SUBJECTS = []
         self.FOOD = []
+
+        self.dt = 0
 
     def pregame(self):
 
         self.FOOD.clear()
+        self.VISUALIZER.update()
 
         for genome in sum([s.members for s in self.BRAIN.species], start=[]):
             self.addSubject(genome)
@@ -37,9 +41,6 @@ class Simulator:
                         global EVOLVING
                         self.BRAIN = Brain.load('Evol_Save')
                         EVOLVING = False
-                    if event.key == pg.K_r:
-                        self.BRAIN.fittest = self.BRAIN.getBest()
-                        self.reproduceFittest()
         return True
 
     def updateDrawContent(self):
@@ -48,7 +49,8 @@ class Simulator:
 
         for sub in self.SUBJECTS:
 
-            if not sub.dead:
+            if not sub.dead and len(self.FOOD):
+
                 minFood = min(self.FOOD, key= lambda f: (f.position - sub.position).magnitude())
                 minDist = (minFood.position - sub.position)
 
@@ -58,18 +60,24 @@ class Simulator:
                     self.FOOD.remove(minFood)
 
                 sub.resolveInputs(
-                    [sub.position.x/WIDTH,
-                     sub.position.y/HEIGHT,
-                     minDist.x/WIDTH,
-                     minDist.y/HEIGHT,
-                     (sub.rotation.angle_to(minDist) + pi)/(2*pi)])
+                    [
+                    # minDist.x/WIDTH,
+                    # minDist.y/HEIGHT,
+                    (sub.rotation.angle_to(minDist) + pi)/(2*pi)
+                    ])
 
-            if not sub.update():
+            if not len(self.FOOD):
+                sub.kill()
+                break
+
+            if not sub.update(self.dt):
                 self.SUBJECTS.remove(sub)
             sub.draw(self.display)
 
         for food in self.FOOD:
             food.draw(self.display)
+
+        self.display.blit(self.VISUALIZER.surface, (20, 20))
 
     def addFood(self):
         offsetx = (random() * 1.8 - 0.9)
@@ -105,7 +113,7 @@ class Simulator:
             self.updateDrawContent()
 
             pg.display.flip()
-            self.clock.tick(FPS)
+            self.dt = self.clock.tick(FPS)/1000
 
         return False
 class Subject:
@@ -114,16 +122,20 @@ class Subject:
 
         self.position = position
         self.velocity = pg.Vector2()
+        self.angularVelocity = 0
         self.rotation = pg.Vector2(0, -1)
         self.angle = 0
 
         self.originalImage = SUBJECT_LIVE
         self.drawingImage = self.originalImage.copy()
         self.rect = self.drawingImage.get_rect()
+        self.rect.center = self.position
 
         self.lifetime = INITIAL_LIFETIME
         self.timeLived = 0
         self.genome = genome
+
+        self.rotate(0)
 
         self.dead = False
 
@@ -131,16 +143,14 @@ class Subject:
         self.velocity = self.rotation*SUBJECT_MSPEED
 
     def turnLeft(self):
-        self.rotation = self.rotation.rotate(-SUBJECT_RSPEED)
-        self.angle+=SUBJECT_RSPEED
-        posn = self.rect.center
-        self.drawingImage = pg.transform.rotate(self.originalImage, self.angle)
-        self.rect = self.drawingImage.get_rect()
-        self.rect.center = posn
+        self.angularVelocity = -SUBJECT_RSPEED
 
     def turnRight(self):
+        self.angularVelocity = SUBJECT_RSPEED
+
+    def rotate(self, dt):
         self.rotation = self.rotation.rotate(SUBJECT_RSPEED)
-        self.angle-=SUBJECT_RSPEED
+        self.angle -= SUBJECT_RSPEED
         posn = self.rect.center
         self.drawingImage = pg.transform.rotate(self.originalImage, self.angle)
         self.rect = self.drawingImage.get_rect()
@@ -149,30 +159,37 @@ class Subject:
     def moveBackward(self):
         self.velocity = -self.rotation*SUBJECT_MSPEED
 
-    def update(self):
+    def kill(self):
+        self.genome.setFitness((self.timeLived - INITIAL_LIFETIME) * 2 // 600)
+        self.originalImage = SUBJECT_DEAD
 
-        self.lifetime -= LOSS_OF_LIFE
-        self.timeLived += LOSS_OF_LIFE
+        posn = self.rect.center
+        self.drawingImage = pg.transform.rotate(self.originalImage, self.angle)
+        self.rect = self.drawingImage.get_rect()
+        self.rect.center = posn
 
-        if self.velocity.magnitude() or not self.dead:
-            self.velocity -= FRICTION * self.velocity
-            if self.velocity.magnitude() < 0.1: self.velocity *= 0
-            self.position += self.velocity
-            self.rect.center = self.position
+        self.lifetime = INITIAL_LIFETIME
+        self.dead = True
+
+    def update(self, dt):
+
+        self.lifetime -= LOSS_OF_LIFE * dt
+        self.timeLived += LOSS_OF_LIFE * dt
 
         if not self.dead:
 
-            if self.lifetime <= 0 or not(0 < self.position.x < WIDTH) or not(0 < self.position.y < HEIGHT):
-                self.genome.setFitness((self.timeLived-INITIAL_LIFETIME)*2//600)
-                self.originalImage = SUBJECT_DEAD
+            if self.velocity.magnitude():
+                self.velocity -= FRICTION * self.velocity
+                if self.velocity.magnitude() < 0.1: self.velocity *= 0
+                self.position += self.velocity * dt
+                self.rect.center = self.position
 
-                posn = self.rect.center
-                self.drawingImage = pg.transform.rotate(self.originalImage, self.angle)
-                self.rect = self.drawingImage.get_rect()
-                self.rect.center = posn
+            if self.angularVelocity:
+                self.rotate(dt)
+                self.angularVelocity = 0
 
-                self.lifetime = INITIAL_LIFETIME
-                self.dead = True
+            if self.lifetime <= 0 or not(-50 < self.position.x < WIDTH+50) or not(-50 < self.position.y < HEIGHT+50):
+                self.kill()
 
         else:
 
@@ -237,3 +254,4 @@ if __name__ == "__main__":
     while sim.mainloop():
         if EVOLVING:
             sim.BRAIN.evolve()
+        sim.VISUALIZER.setGenome(sim.BRAIN.getBest())
