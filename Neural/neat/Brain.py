@@ -112,7 +112,7 @@ class Brain:
 
             return newNode.copy()
 
-    def getNode(self, id: int = 0) -> NodeGene:
+    def getNode(self, id: int = 0, override : bool = False) -> NodeGene:
 
         if id > len(self.all_nodes) or id == 0:
             return self.all_nodes.addItem(NodeGene(len(self.all_nodes) + 1))
@@ -192,35 +192,6 @@ class Brain:
             for s in self.species:
                 for g in s.members:
                     g.mutate()
-
-    def save(self, filename):
-        with open(f'{filename}.neat', mode='wb') as file:
-            dump(self, file, HIGHEST_PROTOCOL)
-
-    def saveFittest(self, filename):
-        with open(f'{filename}_fittest.gen', mode='wb') as file:
-            dump(self.fittest, file, HIGHEST_PROTOCOL)
-
-    def loadFittest(self, filename):
-        with open(f'{filename}_fittest.gen', mode='rb') as file:
-            genome = load(file)
-
-        for s in self.species:
-            s.members.clear()
-        self.species.clear()
-
-        for i in range(self.clients):
-            copy = genome.copy()
-            for j in range(5):
-                copy.mutate()
-
-            self.classifyGenome(copy)
-
-    @staticmethod
-    def load(filename):
-        with open(f'{filename}.neat', mode='rb') as file:
-            return load(file)
-
 
 class WeightSet:
 

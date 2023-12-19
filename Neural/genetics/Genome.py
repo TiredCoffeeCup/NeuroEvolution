@@ -210,8 +210,8 @@ class Genome:
             inp = self.brain.getNode(conn.input.iNum)
             out = self.brain.getNode(conn.output.iNum)
 
-            clone.nodes.addItem(inp)
-            clone.nodes.addItem(out)
+            clone.nodes.append(inp)
+            clone.nodes.append(out)
 
             newConn = clone.connections.addItem(self.brain.getConnector(inp, out))
 
@@ -242,3 +242,6 @@ class Genome:
     @property
     def fitness(self):
         return self.__fitness
+
+    def __str__(self):
+        return str([n.output for n in self.outputNodes])

@@ -33,14 +33,6 @@ class Simulator:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return False
-            if event.type == pg.KEYDOWN:
-                if pg.key.get_mods() & pg.KMOD_CTRL:
-                    if event.key == pg.K_s:
-                        self.BRAIN.save('Evol_Save')
-                    if event.key == pg.K_l:
-                        global EVOLVING
-                        self.BRAIN = Brain.load('Evol_Save')
-                        EVOLVING = False
         return True
 
     def updateDrawContent(self):
@@ -105,6 +97,9 @@ class Simulator:
 
         self.pregame()
 
+        for i in self.SUBJECTS:
+            print(i.genome)
+
         while self.checkEvents():
 
             if not len([sub for sub in self.SUBJECTS if not sub.dead]):
@@ -135,12 +130,16 @@ class Subject:
         self.timeLived = 0
         self.genome = genome
 
+        self.moved = False
+        self.lastCheck = 0
+
         self.rotate(0)
 
         self.dead = False
 
     def moveForward(self):
         self.velocity = self.rotation*SUBJECT_MSPEED
+        self.moved = True
 
     def turnLeft(self):
         self.angularVelocity = -SUBJECT_RSPEED
@@ -190,6 +189,16 @@ class Subject:
 
             if self.lifetime <= 0 or not(-50 < self.position.x < WIDTH+50) or not(-50 < self.position.y < HEIGHT+50):
                 self.kill()
+
+            if self.timeLived - self.lastCheck > 2:
+                if not self.moved:
+                    self.kill()
+                else:
+
+                    self.lastCheck = self.timeLived
+                    self.moved = False
+
+
 
         else:
 
