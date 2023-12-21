@@ -1,5 +1,3 @@
-
-
 class BaseGene:
 
     def __init__(self, iNum: int) -> None:

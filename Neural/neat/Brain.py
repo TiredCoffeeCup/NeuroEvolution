@@ -1,4 +1,3 @@
-from pickle import load, dump, HIGHEST_PROTOCOL
 from random import random
 
 from Neural.genetics.Genes import NodeGene, ConnectionGene
@@ -112,7 +111,7 @@ class Brain:
 
             return newNode.copy()
 
-    def getNode(self, id: int = 0, override : bool = False) -> NodeGene:
+    def getNode(self, id: int = 0, override: bool = False) -> NodeGene:
 
         if id > len(self.all_nodes) or id == 0:
             return self.all_nodes.addItem(NodeGene(len(self.all_nodes) + 1))
@@ -192,6 +191,7 @@ class Brain:
             for s in self.species:
                 for g in s.members:
                     g.mutate()
+
 
 class WeightSet:
 

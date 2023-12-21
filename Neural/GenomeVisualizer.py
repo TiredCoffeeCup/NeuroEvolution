@@ -1,5 +1,7 @@
 import pygame as pg
+
 from Neural.genetics.Genome import Genome
+
 
 class Visualizer:
 
@@ -48,7 +50,8 @@ class Visualizer:
 
             wt = pg.font.Font(None, 20).render(str(conn.weight)[:5], False, color)
 
-            self.surface.blit(wt, (pos1 + pos2)/2 - pg.Vector2(wt.get_width(), wt.get_height()) / 2 + pg.Vector2(0, 15))
+            self.surface.blit(wt,
+                              (pos1 + pos2) / 2 - pg.Vector2(wt.get_width(), wt.get_height()) / 2 + pg.Vector2(0, 15))
 
         for node in self.genome.nodes:
             pos = (node.x * self.surfWidth, node.y * self.surfHeight)

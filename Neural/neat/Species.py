@@ -69,10 +69,10 @@ class Species:
         return len(
             [i for i in range(
                 len(self.fitnessHistory)
-            ) if i > 0  and (
-                    self.fitnessHistory[i] > (sum(self.fitnessHistory[:i])/i)
-            )]
-        ) > num//2
+            ) if i > 0 and (
+                     self.fitnessHistory[i] > (sum(self.fitnessHistory[:i]) / i)
+             )]
+        ) > num // 2
 
     def kill(self):
 

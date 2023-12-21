@@ -1,7 +1,8 @@
-from settings import *
 from Neural import *
+from settings import *
 
 pg.init()
+
 
 class Simulator:
 
@@ -28,6 +29,7 @@ class Simulator:
 
         while len(self.FOOD) < FOOD_AMT:
             self.addFood()
+
     def checkEvents(self) -> bool:
 
         for event in pg.event.get():
@@ -43,19 +45,19 @@ class Simulator:
 
             if not sub.dead and len(self.FOOD):
 
-                minFood = min(self.FOOD, key= lambda f: (f.position - sub.position).magnitude())
+                minFood = min(self.FOOD, key=lambda f: (f.position - sub.position).magnitude())
                 minDist = (minFood.position - sub.position)
 
-                if minDist.magnitude() < FOODSIZE//2:
+                if minDist.magnitude() < FOODSIZE // 2:
                     sub.consumeFood()
                     self.addFood()
                     self.FOOD.remove(minFood)
 
                 sub.resolveInputs(
                     [
-                    # minDist.x/WIDTH,
-                    # minDist.y/HEIGHT,
-                    (sub.rotation.angle_to(minDist) + pi)/(2*pi)
+                        # minDist.x/WIDTH,
+                        # minDist.y/HEIGHT,
+                        (sub.rotation.angle_to(minDist) + pi) / (2 * pi)
                     ])
 
             if not len(self.FOOD):
@@ -76,12 +78,12 @@ class Simulator:
         if abs(offsetx) * random() > 0.2:
             self.FOOD.append(Food(
                 pg.Vector2(
-                    (WIDTH//2 + offsetx * WIDTH//2 , random() * HEIGHT)
+                    (WIDTH // 2 + offsetx * WIDTH // 2, random() * HEIGHT)
                 )))
 
     def addSubject(self, genome):
         self.SUBJECTS.append(
-            Subject(pg.Vector2((WIDTH//2, HEIGHT//2)), genome)
+            Subject(pg.Vector2((WIDTH // 2, HEIGHT // 2)), genome)
         )
 
     def reproduceFittest(self):
@@ -108,9 +110,11 @@ class Simulator:
             self.updateDrawContent()
 
             pg.display.flip()
-            self.dt = self.clock.tick(FPS)/1000
+            self.dt = self.clock.tick(FPS) / 1000
 
         return False
+
+
 class Subject:
 
     def __init__(self, position: pg.Vector2, genome):
@@ -138,7 +142,7 @@ class Subject:
         self.dead = False
 
     def moveForward(self):
-        self.velocity = self.rotation*SUBJECT_MSPEED
+        self.velocity = self.rotation * SUBJECT_MSPEED
         self.moved = True
 
     def turnLeft(self):
@@ -156,7 +160,7 @@ class Subject:
         self.rect.center = posn
 
     def moveBackward(self):
-        self.velocity = -self.rotation*SUBJECT_MSPEED
+        self.velocity = -self.rotation * SUBJECT_MSPEED
 
     def kill(self):
         self.genome.setFitness((self.timeLived - INITIAL_LIFETIME) * 2 // 600)
@@ -187,7 +191,8 @@ class Subject:
                 self.rotate(dt)
                 self.angularVelocity = 0
 
-            if self.lifetime <= 0 or not(-50 < self.position.x < WIDTH+50) or not(-50 < self.position.y < HEIGHT+50):
+            if self.lifetime <= 0 or not (-50 < self.position.x < WIDTH + 50) or not (
+                    -50 < self.position.y < HEIGHT + 50):
                 self.kill()
 
             if self.timeLived - self.lastCheck > 2:
@@ -206,7 +211,7 @@ class Subject:
             if self.lifetime == 0:
                 return False
 
-            self.drawingImage.set_alpha(255 * self.lifetime/INITIAL_LIFETIME)
+            self.drawingImage.set_alpha(255 * self.lifetime / INITIAL_LIFETIME)
 
         return True
 
@@ -215,11 +220,13 @@ class Subject:
 
     def consumeFood(self):
         self.lifetime += FOODLIFE
+
     def resolveInputs(self, inputs):
 
         output = self.genome.calculate(inputs)
 
         OUTPUT_FUNCTS[output.index(max(output))](self)
+
 
 class Food:
 
@@ -229,9 +236,8 @@ class Food:
         self.rect = self.image.get_rect()
 
         for _ in range(randint(2, 5)):
-
-            pos = ((random()*0.4 + 0.3)*FOODSIZE, (random()*0.4 + 0.3)*FOODSIZE)
-            rad = randint(int(0.1*FOODSIZE)+1,int(0.3 * FOODSIZE))
+            pos = ((random() * 0.4 + 0.3) * FOODSIZE, (random() * 0.4 + 0.3) * FOODSIZE)
+            rad = randint(int(0.1 * FOODSIZE) + 1, int(0.3 * FOODSIZE))
 
             pg.draw.circle(self.image, (200, 200, 10), pos, rad)
 
@@ -247,11 +253,9 @@ class Food:
 
         self.image.blit(self.image, (0, 0), None, pg.BLEND_RGB_SUB)
 
-        self.image.blit(tempImage, (0,0))
-
+        self.image.blit(tempImage, (0, 0))
 
     def draw(self, surface):
-
         self.rect.center = self.position
         surface.blit(self.image, self.rect)
 

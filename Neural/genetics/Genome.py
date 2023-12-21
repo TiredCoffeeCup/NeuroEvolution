@@ -81,7 +81,7 @@ class Genome:
             newCon = self.connections.addItem(self.brain.getConnector(*nodes))
 
             if newCon is not None:
-                newCon.setWeight((random()*2 - 1) * self.brain.weightSet.getWeightStrengths(0))
+                newCon.setWeight((random() * 2 - 1) * self.brain.weightSet.getWeightStrengths(0))
                 return
 
     def toggleConnection(self):
@@ -101,7 +101,7 @@ class Genome:
         if len(self.connections) < 1: return
 
         conn = choice(self.connections)
-        conn.setWeight(conn.weight + (random()*2 -1) * self.brain.weightSet.getWeightStrengths(1))
+        conn.setWeight(conn.weight + (random() * 2 - 1) * self.brain.weightSet.getWeightStrengths(1))
 
     def calculate(self, inputs: list[int]):
         if len(inputs) != self.inputSize: raise ValueError('Input size does not match available slots')
@@ -109,7 +109,7 @@ class Genome:
         for i, n in enumerate(self.inputNodes):
             n.setOutput(inputs[i])
 
-        nodeLis = {j : [] for j in range(len(self.nodes)) if self.nodes[j] not in self.inputNodes}
+        nodeLis = {j: [] for j in range(len(self.nodes)) if self.nodes[j] not in self.inputNodes}
 
         for i in range(len(self.connections)):
             nodeLis[self.nodes.index(self.connections[i].output)].append(i)
@@ -117,7 +117,7 @@ class Genome:
         nodeLis = sorted(list(nodeLis.items()), key=lambda t: self.nodes[t[0]].x)
 
         for n, conns in nodeLis:
-            node =  self.nodes[n]
+            node = self.nodes[n]
             node.setOutput(0)
 
             for c in conns:
@@ -131,13 +131,13 @@ class Genome:
 
     def distance(self, other):
 
-        sDict = {self.connections[i].iNum : i for i in range(len(self.connections))}
-        oDict = {other.connections[j].iNum : j for j in range(len(other.connections))}
+        sDict = {self.connections[i].iNum: i for i in range(len(self.connections))}
+        oDict = {other.connections[j].iNum: j for j in range(len(other.connections))}
 
         s_set = set(sDict)
         o_set = set(oDict)
 
-        if not(s_set or o_set): return 0
+        if not (s_set or o_set): return 0
 
         common = s_set & o_set
         uncommon = s_set ^ o_set
@@ -146,8 +146,8 @@ class Genome:
         for i in common:
             weightDiff += abs(self.connections[sDict[i]].weight - other.connections[oDict[i]].weight)
 
-        weightDist =  self.brain.weightSet.getDistanceConstants(0) * weightDiff/max(len(common), 20)
-        disjointDist = self.brain.weightSet.getDistanceConstants(1) * len(uncommon)/ max(len(s_set), len(o_set))
+        weightDist = self.brain.weightSet.getDistanceConstants(0) * weightDiff / max(len(common), 20)
+        disjointDist = self.brain.weightSet.getDistanceConstants(1) * len(uncommon) / max(len(s_set), len(o_set))
 
         return weightDist + disjointDist
 
