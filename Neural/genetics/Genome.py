@@ -1,27 +1,27 @@
 from random import choices, sample, choice, random
 
-from Neural.genetics.Genes import ConnectionGene, NodeGene
-from Neural.maths_and_data.IndexedSet import IndexedSet
+from neural.genetics.genes import ConnectionGene, NodeGene
+from neural.maths_and_data.indexed_set import IndexedSet
 
 
 class Genome:
 
-    def __init__(self, defaultAct):
+    def __init__(self, default_act):
 
         self.nodes: IndexedSet[NodeGene] = IndexedSet()
         self.connections: IndexedSet[ConnectionGene] = IndexedSet()
 
-        self.inputNodes = []
-        self.outputNodes = []
+        self.input_nodes = []
+        self.output_nodes = []
 
         self.__fitness = 0
 
-        self.defaultActivation = defaultAct
+        self.default_activation = default_act
 
         self.__brain = None
 
-        self.__inputSize = 0
-        self.__outputSize = 0
+        self.__input_size = 0
+        self.__output_size = 0
 
     def mutate(self):
         """
@@ -33,190 +33,198 @@ class Genome:
 
         choices(
             [
-                self.mutateNode,
-                self.mutateConnector,
-                self.toggleConnection,
-                self.mutateWeightShift,
-                self.mutateWeightRandom
+                self.mutate_node,
+                self.mutate_connector,
+                self.toggle_connection,
+                self.mutate_weight_shift,
+                self.mutate_weight_random
             ],
-            weights=self.brain.weightSet.getMutationProbs(),
+            weights=self.brain.weightSet.get_mutation_probs(),
             k=1
         )[0]()
 
-    def mutateNode(self):
+    def mutate_node(self):
 
-        if len(self.connections) < 1: return
+        if len(self.connections) < 1:
+            return
 
         connector = choice(self.connections)
 
-        newNode: NodeGene = self.nodes.addItem(self.brain.getReplaceNode(connector))
+        new_node: NodeGene = self.nodes.addItem(self.brain.get_replace_node(connector))
 
-        if newNode is None: return
+        if new_node is None:
+            return
 
-        con1 = self.connections.addItem(self.brain.getConnector(connector.input, newNode))
+        con1 = self.connections.addItem(self.brain.get_connector(connector.input, new_node))
 
-        con1.setWeight(connector.weight)
-        con1.setActivity(connector.active)
+        con1.set_weight(connector.weight)
+        con1.set_activity(connector.active)
 
-        con2 = self.connections.addItem(self.brain.getConnector(newNode, connector.output))
+        con2 = self.connections.addItem(self.brain.get_connector(new_node, connector.output))
 
-        con2.setWeight(1)
-        con2.setActivity(connector.active)
+        con2.set_weight(1)
+        con2.set_activity(connector.active)
 
-        connector.setActivity(False)
+        connector.set_activity(False)
 
-    def mutateConnector(self):
+    def mutate_connector(self):
 
         i = 0
 
         while i < 50:
             i += 1
 
-            nodes: IndexedSet[NodeGene] = sample(self.nodes, k=2)
+            nodes = sample(self.nodes, k=2)
 
-            if nodes[0].x == nodes[1].x: continue
+            if nodes[0].x == nodes[1].x:
+                continue
 
             nodes.sort(key=lambda n: n.x)
 
-            newCon = self.connections.addItem(self.brain.getConnector(*nodes))
+            new_con = self.connections.addItem(self.brain.get_connector(*nodes))
 
-            if newCon is not None:
-                newCon.setWeight((random() * 2 - 1) * self.brain.weightSet.getWeightStrengths(0))
+            if new_con is not None:
+                new_con.set_weight((random() * 2 - 1) * self.brain.weightSet.get_weight_strengths(0))
                 return
 
-    def toggleConnection(self):
+    def toggle_connection(self):
 
-        if len(self.connections) < 1: return
-
-        conn = choice(self.connections)
-        conn.setActivity(not conn.active)
-
-    def mutateWeightRandom(self):
-        if len(self.connections) < 1: return
+        if len(self.connections) < 1:
+            return
 
         conn = choice(self.connections)
-        conn.setWeight((random() * 2 - 1) * self.brain.weightSet.getWeightStrengths(0))
+        conn.set_activity(not conn.active)
 
-    def mutateWeightShift(self):
-        if len(self.connections) < 1: return
+    def mutate_weight_random(self):
+        if len(self.connections) < 1:
+            return
 
         conn = choice(self.connections)
-        conn.setWeight(conn.weight + (random() * 2 - 1) * self.brain.weightSet.getWeightStrengths(1))
+        conn.set_weight((random() * 2 - 1) * self.brain.weightSet.get_weight_strengths(0))
+
+    def mutate_weight_shift(self):
+        if len(self.connections) < 1:
+            return
+
+        conn = choice(self.connections)
+        conn.set_weight(conn.weight + (random() * 2 - 1) * self.brain.weightSet.get_weight_strengths(1))
 
     def calculate(self, inputs: list[int]):
-        if len(inputs) != self.inputSize: raise ValueError('Input size does not match available slots')
+        if len(inputs) != self.input_size:
+            raise ValueError('Input size does not match available slots')
 
-        for i, n in enumerate(self.inputNodes):
-            n.setOutput(inputs[i])
+        for i, n in enumerate(self.input_nodes):
+            n.set_output(inputs[i])
 
-        nodeLis = {j: [] for j in range(len(self.nodes)) if self.nodes[j] not in self.inputNodes}
+        node_lis = {j: [] for j in range(len(self.nodes)) if self.nodes[j] not in self.input_nodes}
 
         for i in range(len(self.connections)):
-            nodeLis[self.nodes.index(self.connections[i].output)].append(i)
+            node_lis[self.nodes.index(self.connections[i].output)].append(i)
 
-        nodeLis = sorted(list(nodeLis.items()), key=lambda t: self.nodes[t[0]].x)
+        node_lis = sorted(list(node_lis.items()), key=lambda t: self.nodes[t[0]].x)
 
-        for n, conns in nodeLis:
+        for n, conns in node_lis:
             node = self.nodes[n]
-            node.setOutput(0)
+            node.set_output(0)
 
             for c in conns:
                 conn = self.connections[c]
 
-                node.addToOutput(conn.input.output * conn.weight)
+                node.add_to_output(conn.input.output * conn.weight)
 
-            node.setOutput(self.defaultActivation(node.output))
+            node.set_output(self.default_activation(node.output))
 
-        return [n.output for n in self.outputNodes]
+        return [n.output for n in self.output_nodes]
 
     def distance(self, other):
 
-        sDict = {self.connections[i].iNum: i for i in range(len(self.connections))}
-        oDict = {other.connections[j].iNum: j for j in range(len(other.connections))}
+        s_dict = {self.connections[i].i_num: i for i in range(len(self.connections))}
+        o_dict = {other.connections[j].i_num: j for j in range(len(other.connections))}
 
-        s_set = set(sDict)
-        o_set = set(oDict)
+        s_set = set(s_dict)
+        o_set = set(o_dict)
 
-        if not (s_set or o_set): return 0
+        if not (s_set or o_set):
+            return 0
 
         common = s_set & o_set
         uncommon = s_set ^ o_set
-        weightDiff = 0
+        weight_diff = 0
 
         for i in common:
-            weightDiff += abs(self.connections[sDict[i]].weight - other.connections[oDict[i]].weight)
+            weight_diff += abs(self.connections[s_dict[i]].weight - other.connections[o_dict[i]].weight)
 
-        weightDist = self.brain.weightSet.getDistanceConstants(0) * weightDiff / max(len(common), 20)
-        disjointDist = self.brain.weightSet.getDistanceConstants(1) * len(uncommon) / max(len(s_set), len(o_set))
+        weight_dist = self.brain.weightSet.get_distance_constants(0) * weight_diff / max(len(common), 20)
+        disjoint_dist = self.brain.weightSet.get_distance_constants(1) * len(uncommon) / max(len(s_set), len(o_set))
 
-        return weightDist + disjointDist
+        return weight_dist + disjoint_dist
 
     @staticmethod
     def crossover(first, second):
 
-        child = first.brain.createGenome()
+        child = first.brain.create_genome()
 
-        fitSorted = sorted([first, second], key=lambda g: g.fitness, reverse=True)
+        fit_sorted = sorted([first, second], key=lambda g: g.fitness, reverse=True)
 
-        fDict, lDict = tuple({g.connections[i].iNum: i for i in range(len(g.connections))} for g in fitSorted)
+        f_dict, l_dict = tuple({g.connections[i].i_num: i for i in range(len(g.connections))} for g in fit_sorted)
 
-        fitter_set = set(fDict)
-        lesser_set = set(lDict)
+        fitter_set = set(f_dict)
+        lesser_set = set(l_dict)
 
         for i in fitter_set & lesser_set:
-            selectedConn = fitSorted[0].connections[fDict[i]]
-            inp = first.brain.getNode(selectedConn.input.iNum)
-            out = first.brain.getNode(selectedConn.output.iNum)
+            selected_conn = fit_sorted[0].connections[f_dict[i]]
+            inp = first.brain.get_node(selected_conn.input.i_num)
+            out = first.brain.get_node(selected_conn.output.i_num)
 
             child.nodes.addItem(inp)
             child.nodes.addItem(out)
 
-            conn = child.connections.addItem(first.brain.getConnector(inp, out))
+            conn = child.connections.addItem(first.brain.get_connector(inp, out))
 
             if conn:
-                conn.setWeight(selectedConn.weight)
-                conn.setActivity(selectedConn.active)
+                conn.set_weight(selected_conn.weight)
+                conn.set_activity(selected_conn.active)
 
         for i in (fitter_set - lesser_set):
-            selectedConn = fitSorted[0].connections[fDict[i]]
-            inp = first.brain.getNode(selectedConn.input.iNum)
-            out = first.brain.getNode(selectedConn.output.iNum)
+            selected_conn = fit_sorted[0].connections[f_dict[i]]
+            inp = first.brain.get_node(selected_conn.input.i_num)
+            out = first.brain.get_node(selected_conn.output.i_num)
 
             child.nodes.addItem(inp)
             child.nodes.addItem(out)
-            conn = child.connections.addItem(first.brain.getConnector(inp, out))
+            conn = child.connections.addItem(first.brain.get_connector(inp, out))
             if conn:
-                conn.setWeight(selectedConn.weight)
-                conn.setActivity(selectedConn.active)
+                conn.set_weight(selected_conn.weight)
+                conn.set_activity(selected_conn.active)
 
         return child
 
-    def setOutputSize(self, value):
-        self.__outputSize = value
+    def set_output_size(self, value):
+        self.__output_size = value
 
-    def setInputSize(self, value):
-        self.__inputSize = value
+    def set_input_size(self, value):
+        self.__input_size = value
 
-    def setBrain(self, value):
+    def set_brain(self, value):
         self.__brain = value
 
-    def setFitness(self, value):
+    def set_fitness(self, value):
         self.__fitness = value
 
     def copy(self):
-        clone = self.brain.createGenome()
+        clone = self.brain.create_genome()
 
         for conn in self.connections:
-            inp = self.brain.getNode(conn.input.iNum)
-            out = self.brain.getNode(conn.output.iNum)
+            inp = self.brain.get_node(conn.input.i_num)
+            out = self.brain.get_node(conn.output.i_num)
 
             clone.nodes.append(inp)
             clone.nodes.append(out)
 
-            newConn = clone.connections.addItem(self.brain.getConnector(inp, out))
+            new_conn = clone.connections.addItem(self.brain.get_connector(inp, out))
 
-            newConn.setWeight(conn.weight)
-            newConn.setActivity(conn.active)
+            new_conn.set_weight(conn.weight)
+            new_conn.set_activity(conn.active)
 
         return clone
 
@@ -228,12 +236,12 @@ class Genome:
         return True
 
     @property
-    def inputSize(self):
-        return self.__inputSize
+    def input_size(self):
+        return self.__input_size
 
     @property
-    def outputSize(self):
-        return self.__outputSize
+    def output_size(self):
+        return self.__output_size
 
     @property
     def brain(self):
@@ -244,4 +252,4 @@ class Genome:
         return self.__fitness
 
     def __str__(self):
-        return str([n.output for n in self.outputNodes])
+        return str([n.output for n in self.output_nodes])

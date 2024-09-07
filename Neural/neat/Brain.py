@@ -1,10 +1,10 @@
 from random import random
 
-from Neural.genetics.Genes import NodeGene, ConnectionGene
-from Neural.genetics.Genome import Genome
-from Neural.maths_and_data.Activations import *
-from Neural.maths_and_data.IndexedSet import IndexedSet
-from Neural.neat.Species import Species
+from neural.genetics.genes import NodeGene, ConnectionGene
+from neural.genetics.genome import Genome
+from neural.maths_and_data.activations import *
+from neural.maths_and_data.indexed_set import IndexedSet
+from neural.neat.species import Species
 
 
 class Brain:
@@ -24,14 +24,15 @@ class Brain:
         self.generation = 0
 
         self.fittest = None
+        self.max_fitness = 0
 
         self.reset()
 
         for i in range(self.clients):
-            newGenome = self.createGenome()
-            for i in range(10):
-                newGenome.mutate()
-            self.classifyGenome(newGenome)
+            new_genome = self.create_genome()
+            for j in range(10):
+                new_genome.mutate()
+            self.classify_genome(new_genome)
 
     def reset(self):
 
@@ -44,138 +45,140 @@ class Brain:
         self.species.clear()
 
         for i in range(self.inputs):
-            n = self.getNode()
+            n = self.get_node()
 
-            n.setX(0.1)
+            n.set_x(0.1)
             if self.inputs > 1:
-                n.setY((i / (self.inputs - 1)) * 0.8 + 0.1)
+                n.set_y((i / (self.inputs - 1)) * 0.8 + 0.1)
             else:
-                n.setY(0.5)
+                n.set_y(0.5)
 
         for o in range(self.outputs):
-            n = self.getNode()
+            n = self.get_node()
 
-            n.setX(0.9)
+            n.set_x(0.9)
             if self.outputs > 1:
-                n.setY((o / (self.outputs - 1)) * 0.8 + 0.1)
+                n.set_y((o / (self.outputs - 1)) * 0.8 + 0.1)
             else:
-                n.setY(0.5)
+                n.set_y(0.5)
 
-    def createGenome(self) -> Genome:
+    def create_genome(self) -> Genome:
 
-        newGenome = Genome(sigmoid)
+        new_genome = Genome(sigmoid)
 
-        newGenome.setBrain(self)
-        newGenome.setInputSize(self.inputs)
-        newGenome.setOutputSize(self.outputs)
+        new_genome.set_brain(self)
+        new_genome.set_input_size(self.inputs)
+        new_genome.set_output_size(self.outputs)
 
         for i in range(self.inputs + self.outputs):
-            node = self.getNode(i + 1)
+            node = self.get_node(i + 1)
             if i < self.inputs:
-                newGenome.inputNodes.append(node)
+                new_genome.input_nodes.append(node)
             else:
-                newGenome.outputNodes.append(node)
-            newGenome.nodes.append(node)
+                new_genome.output_nodes.append(node)
+            new_genome.nodes.append(node)
 
-        return newGenome
+        return new_genome
 
-    def getConnector(self, inputNode: NodeGene, outputNode: NodeGene):
+    def get_connector(self, input_node: NodeGene, output_node: NodeGene):
 
-        newConnector = ConnectionGene(inputNode, outputNode)
-        key = (inputNode.iNum, outputNode.iNum)
+        new_connector = ConnectionGene(input_node, output_node)
+        key = (input_node.i_num, output_node.i_num)
 
-        conn = self.all_connectors.get(key, None)
+        conn = self.all_connectors.get(key)
 
         if conn is not None:
-            newConnector.setInum(conn[0])
+            new_connector.set_inum(conn[0])
         else:
-            newConnector.setInum(len(self.all_connectors) + 1)
-            self.all_connectors[key] = [newConnector.iNum, None]
+            new_connector.set_inum(len(self.all_connectors) + 1)
+            self.all_connectors[key] = [new_connector.i_num, None]
 
-        return newConnector
+        return new_connector
 
-    def getReplaceNode(self, conn: ConnectionGene) -> NodeGene:
+    def get_replace_node(self, conn: ConnectionGene) -> NodeGene:
 
-        key = (conn.input.iNum, conn.output.iNum)
+        key = (conn.input.i_num, conn.output.i_num)
 
-        nodeId = self.all_connectors[key][1]
+        node_id = self.all_connectors[key][1]
 
-        if nodeId is not None:
-            return self.getNode(nodeId)
+        if node_id is not None:
+            return self.get_node(node_id)
         else:
             self.all_connectors[key][1] = len(self.all_nodes) + 1
-            newNode = self.getNode()
+            new_node = self.get_node()
 
-            newNode.setX((conn.input.x + conn.output.x) / 2)
-            newNode.setY((conn.input.y + conn.output.y) / 2 + random() * 0.3 - 0.15)
+            new_node.set_x((conn.input.x + conn.output.x) / 2)
+            new_node.set_y((conn.input.y + conn.output.y) / 2 + random() * 0.3 - 0.15)
 
-            return newNode.copy()
+            return new_node.copy()
 
-    def getNode(self, id: int = 0, override: bool = False) -> NodeGene:
+    def get_node(self, n_id: int = 0) -> NodeGene:
 
-        if id > len(self.all_nodes) or id == 0:
+        if n_id > len(self.all_nodes) or n_id == 0:
             return self.all_nodes.addItem(NodeGene(len(self.all_nodes) + 1))
         else:
-            return self.all_nodes[id - 1].copy()
+            return self.all_nodes[n_id - 1].copy()
 
-    def classifyGenome(self, g):
+    def classify_genome(self, g):
 
         if self.species:
             for s in self.species:
-                if s.addMember(g): return
+                if s.add_member(g):
+                    return
 
         self.species.addItem(Species(g))
 
-    def getBest(self):
+    def get_best(self):
         return max(sum([s.members for s in self.species], start=[]), key=lambda m: m.fitness)
 
     def evolve(self):
 
         self.generation += 1
 
-        globalFitness = 0
+        global_fitness = 0
 
         for s in self.species:
-            s.calculateFitness()
-            globalFitness += s.fitnessSum
+            s.calculate_fitness()
+            global_fitness += s.fitnessSum
 
-        self.fittest = max(self.getBest(), self.fittest,
-                           key=lambda g: g.fitness) if self.fittest is not None else self.getBest()
+        self.fittest = max(self.get_best(), self.fittest,
+                           key=lambda gen: gen.fitness) if self.fittest is not None else self.get_best()
+        self.max_fitness = self.get_best().fitness
 
-        if globalFitness > 0:
+        if global_fitness > 0:
 
-            newGlobalFitness = 0
-            survivingSpecies = IndexedSet()
-            totalPop = 0
+            new_global_fitness = 0
+            surviving_species = IndexedSet()
+            total_pop = 0
 
             for s in self.species:
-                if s.canProgress() or self.fittest in s.members:
-                    newGlobalFitness += s.fitnessSum
-                    survivingSpecies.addItem(s)
+                if s.can_progress() or self.fittest in s.members:
+                    new_global_fitness += s.fitnessSum
+                    surviving_species.addItem(s)
 
-                    s.cullGenomes(0.25)
-                    totalPop += len(s.members)
+                    s.cull_genomes(0.25)
+                    total_pop += len(s.members)
                 else:
                     s.kill()
 
-            self.species = survivingSpecies
+            self.species = surviving_species
 
             if self.species:
                 for s in self.species:
-                    ratio = s.fitnessSum / newGlobalFitness
-                    diff = self.clients - totalPop
+                    ratio = s.fitnessSum / new_global_fitness
+                    diff = self.clients - total_pop
 
                     no = int(round(ratio * diff))
 
                     for i in range(no // 3):
-                        s.breed(self.weightSet.getBreedProbs())
+                        s.breed(self.weightSet.get_breed_probs())
 
                     for i in range(no - no // 3):
                         new = self.fittest.copy()
                         for j in range(2):
                             new.mutate()
 
-                        self.classifyGenome(new)
+                        self.classify_genome(new)
 
                     for g in s.members:
                         g.mutate()
@@ -184,7 +187,7 @@ class Brain:
                 for i in range(self.clients):
                     g = self.fittest.copy()
 
-                    self.classifyGenome(g)
+                    self.classify_genome(g)
 
         else:
 
@@ -208,14 +211,14 @@ class WeightSet:
         # 1: Sexual, 1: Asexual
         self.__BREED_PROBABILITIES = (0.53, 0.34)
 
-    def getDistanceConstants(self, index: int = -1):
+    def get_distance_constants(self, index: int = -1):
         return self.__DISTANCE_CONST[index] if index >= 0 else self.__DISTANCE_CONST
 
-    def getWeightStrengths(self, index: int = -1):
+    def get_weight_strengths(self, index: int = -1):
         return self.__WEIGHT_STRENGTHS[index] if index >= 0 else self.__WEIGHT_STRENGTHS
 
-    def getMutationProbs(self, index: int = -1):
+    def get_mutation_probs(self, index: int = -1):
         return self.__MUTATION_PROBS[index] if index >= 0 else self.__MUTATION_PROBS
 
-    def getBreedProbs(self, index: int = -1):
+    def get_breed_probs(self, index: int = -1):
         return self.__BREED_PROBABILITIES[index] if index >= 0 else self.__BREED_PROBABILITIES

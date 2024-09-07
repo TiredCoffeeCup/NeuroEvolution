@@ -1,21 +1,21 @@
 class BaseGene:
 
-    def __init__(self, iNum: int) -> None:
-        self.iNum = iNum
+    def __init__(self, i_num: int) -> None:
+        self.i_num = i_num
 
-    def setInum(self, value):
-        self.iNum = value
+    def set_inum(self, value):
+        self.i_num = value
 
     def __eq__(self, other):
-        return self.iNum == other.iNum
+        return self.i_num == other.i_num
 
     def __hash__(self):
-        return self.iNum
+        return self.i_num
 
 
 class NodeGene(BaseGene):
 
-    def __init__(self, iNum: int, relx: float = 0, rely: float = 0) -> None:
+    def __init__(self, i_num: int, relx: float = 0, rely: float = 0) -> None:
         """
         :param iNum: **Innovation Number** of the node.
 
@@ -23,7 +23,7 @@ class NodeGene(BaseGene):
 
         :param rely: Relative **y position** of the node in the genome. Ranges from [0, 1]
         """
-        super().__init__(iNum)
+        super().__init__(i_num)
 
         self.__x = relx
         self.__y = rely
@@ -42,26 +42,26 @@ class NodeGene(BaseGene):
     def output(self):
         return self.__output
 
-    def setY(self, value):
+    def set_y(self, value):
         self.__y = value
 
-    def setX(self, value):
+    def set_x(self, value):
         self.__x = value
 
-    def addToOutput(self, value):
+    def add_to_output(self, value):
         self.__output += value
 
-    def setOutput(self, value):
+    def set_output(self, value):
         self.__output = value
 
     def copy(self):
-        return NodeGene(self.iNum, self.x, self.y)
+        return NodeGene(self.i_num, self.x, self.y)
 
 
 class ConnectionGene(BaseGene):
 
-    def __init__(self, inp: NodeGene = None, out: NodeGene = None, iNum: int = 0, weight: float = 0) -> None:
-        super().__init__(iNum)
+    def __init__(self, inp: NodeGene = None, out: NodeGene = None, i_num: int = 0, weight: float = 0) -> None:
+        super().__init__(i_num)
 
         self.__input = inp
         self.__output = out
@@ -70,10 +70,10 @@ class ConnectionGene(BaseGene):
 
         self.__weight = weight
 
-    def setActivity(self, value):
+    def set_activity(self, value):
         self.__active = value
 
-    def setInput(self, value: NodeGene):
+    def set_input(self, value: NodeGene):
         """
         Sets the input node of the connection
 
@@ -81,7 +81,7 @@ class ConnectionGene(BaseGene):
         """
         self.__input = value
 
-    def setWeight(self, value: float):
+    def set_weight(self, value: float):
         """
         Sets the weight of the connection
 
@@ -89,7 +89,7 @@ class ConnectionGene(BaseGene):
         """
         self.__weight = value
 
-    def setOutput(self, value: NodeGene):
+    def set_output(self, value: NodeGene):
         """
         Sets the output node of the connection
 

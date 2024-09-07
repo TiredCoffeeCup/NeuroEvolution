@@ -1,2 +1,2 @@
-from Neural.neat.Brain import Brain
-from Neural.GenomeVisualizer import Visualizer
+from neural.neat.brain import Brain
+from neural.genome_visualizer import Visualizer

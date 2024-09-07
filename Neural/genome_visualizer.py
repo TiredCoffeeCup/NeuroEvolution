@@ -1,6 +1,6 @@
 import pygame as pg
 
-from Neural.genetics.Genome import Genome
+from neural.genetics.genome import Genome
 
 
 class Visualizer:
@@ -58,3 +58,5 @@ class Visualizer:
 
             pg.draw.circle(self.surface, (0, 0, 0), pos, 0.02 * self.surfWidth)
             pg.draw.circle(self.surface, (255, 255, 255), pos, 0.01 * self.surfWidth)
+
+        self.surface.set_alpha(125)
